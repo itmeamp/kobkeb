@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เกมส์กบเก็บเหรียญ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            font-weight: bold;
+        }
+
+        .game-area {
+            width: 400px;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto 20px;
+        }
+
+        .player {
+            width: 50px;
+            height: 50px;
+            background: #4CAF50;
+            border: 3px solid #2E7D32;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 10px;
+            left: 175px;
+            transition: left 0.15s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .coin {
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle, #FFD700, #FFA500);
+            border: 3px solid #FF8C00;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.8);
+        }
+
+        .controls {
+            margin-top: 20px;
+        }
+
+        .control-btn {
+            background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            margin: 0 10px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .instructions {
+            margin-top: 20px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+        }
+
+        .restart-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            border: none;
+            color: white;
+            padding: 12px 25px;
+            margin-top: 15px;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        .debug {
+            margin-top: 10px;
+            font-size: 0.8em;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1>🐸 เกมส์กบเก็บเหรียญ</h1>
+            <div class="score-board">
+                <div>🏆 คะแนน: <span id="score">0</span></div>
+                <div>💖 ชีวิต: <span id="lives">3</span></div>
+                <div>⏰ เวลา: <span id="time">60</span></div>
+            </div>
+        </div>
+
+        <div class="game-area" id="gameArea">
+            <div class="player" id="player"></div>
+            <div class="game-over" id="gameOver">
+                <h2>เกมส์จบแล้ว!</h2>
+                <p>คะแนนสุดท้าย: <span id="finalScore">0</span></p>
+                <button class="restart-btn" onclick="restartGame()">เล่นใหม่</button>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn" onclick="moveLeft()">← ซ้าย</button>
+            <button class="control-btn" onclick="startGame()" id="startBtn">เริ่มเกม</button>
+            <button class="control-btn" onclick="moveRight()">ขวา →</button>
+        </div>
+
+        <div class="instructions">
+            <p>ใช้ปุ่มซ้าย-ขวา หรือ กด A-D เพื่อเคลื่อนที่</p>
+            <p>เลื่อนกบไปสัมผัสเหรียญเพื่อเก็บคะแนน!</p>
+        </div>
+
+        <div class="debug" id="debug">
+            กดเริ่มเกมเพื่อเล่น
+        </div>
+    </div>
+
+    <script>
+        let game = {
+            score: 0,
+            lives: 3,
+            time: 60,
+            playerX: 175,
+            running: false,
+            coins: [],
+            intervals: []
+        };
+
+        const elements = {
+            player: document.getElementById('player'),
+            gameArea: document.getElementById('gameArea'),
+            score: document.getElementById('score'),
+            lives: document.getElementById('lives'),
+            time: document.getElementById('time'),
+            gameOver: document.getElementById('gameOver'),
+            finalScore: document.getElementById('finalScore'),
+            startBtn: document.getElementById('startBtn'),
+            debug: document.getElementById('debug')
+        };
+
+        function moveLeft() {
+            if (!game.running) return;
+            if (game.playerX > 0) {
+                game.playerX -= 25;
+                elements.player.style.left = game.playerX + 'px';
+                updateDebug('เลื่อนซ้าย - ตำแหน่ง: ' + game.playerX);
+            }
+        }
+
+        function moveRight() {
+            if (!game.running) return;
+            if (game.playerX < 350) {
+                game.playerX += 25;
+                elements.player.style.left = game.playerX + 'px';
+                updateDebug('เลื่อนขวา - ตำแหน่ง: ' + game.playerX);
+            }
+        }
+
+        function updateDebug(message) {
+            elements.debug.textContent = message + ' | เหรียญ: ' + game.coins.length + ' | คะแนน: ' + game.score;
+        }
+
+        function createCoin() {
+            const coinX = Math.floor(Math.random() * 360);
+            const coin = document.createElement('div');
+            coin.className = 'coin';
+            coin.style.left = coinX + 'px';
+            coin.style.top = '0px';
+            elements.gameArea.appendChild(coin);
+            
+            game.coins.push({
+                element: coin,
+                x: coinX,
+                y: 0
+            });
+            
+            updateDebug('สร้างเหรียญใหม่ที่ตำแหน่ง: ' + coinX);
+        }
+
+        function updateGame() {
+            // อัพเดทเหรียญ
+            for (let i = game.coins.length - 1; i >= 0; i--) {
+                const coin = game.coins[i];
+                coin.y += 3;
+                coin.element.style.top = coin.y + 'px';
+
+                // ตรวจสอบการชน (ง่ายและชัดเจน)
+                const playerLeft = game.playerX;
+                const playerRight = game.playerX + 50;
+                const playerTop = 340;
+                const playerBottom = 390;
+
+                const coinLeft = coin.x;
+                const coinRight = coin.x + 30;
+                const coinTop = coin.y;
+                const coinBottom = coin.y + 30;
+
+                // เช็คการทับซ้อน
+                if (coinBottom >= playerTop && coinTop <= playerBottom &&
+                    coinRight >= playerLeft && coinLeft <= playerRight) {
+                    
+                    // เก็บเหรียญได้!
+                    game.score += 10;
+                    elements.score.textContent = game.score;
+                    
+                    // ลบเหรียญ
+                    coin.element.remove();
+                    game.coins.splice(i, 1);
+                    
+                    updateDebug('🎉 เก็บเหรียญได้! คะแนน: ' + game.score);
+                    continue;
+                }
+
+                // เหรียญตกลงพื้น
+                if (coin.y > 410) {
+                    game.lives--;
+                    elements.lives.textContent = game.lives;
+                    coin.element.remove();
+                    game.coins.splice(i, 1);
+                    
+                    updateDebug('💔 เสียชีวิต! เหลือ: ' + game.lives);
+                    
+                    if (game.lives <= 0) {
+                        endGame();
+                        return;
+                    }
+                }
+            }
+        }
+
+        function startGame() {
+            if (game.running) return;
+            
+            // รีเซ็ตเกม
+            game.score = 0;
+            game.lives = 3;
+            game.time = 60;
+            game.playerX = 175;
+            game.running = true;
+            game.coins = [];
+            
+            // อัพเดทหน้าจอ
+            elements.score.textContent = game.score;
+            elements.lives.textContent = game.lives;
+            elements.time.textContent = game.time;
+            elements.player.style.left = game.playerX + 'px';
+            elements.gameOver.style.display = 'none';
+            elements.startBtn.textContent = 'กำลังเล่น...';
+            elements.startBtn.disabled = true;
+
+            // ลบเหรียญเก่า
+            document.querySelectorAll('.coin').forEach(coin => coin.remove());
+            
+            updateDebug('เกมเริ่มแล้ว!');
+
+            // สร้างเหรียญทุก 1.5 วินาที
+            const coinInterval = setInterval(() => {
+                if (game.running) {
+                    createCoin();
+                }
+            }, 1500);
+
+            // อัพเดทเกมทุก 50ms
+            const gameInterval = setInterval(() => {
+                if (game.running) {
+                    updateGame();
+                }
+            }, 50);
+
+            // นับเวลาถอยหลัง
+            const timeInterval = setInterval(() => {
+                if (game.running) {
+                    game.time--;
+                    elements.time.textContent = game.time;
+                    if (game.time <= 0) {
+                        endGame();
+                    }
+                }
+            }, 1000);
+
+            game.intervals = [coinInterval, gameInterval, timeInterval];
+        }
+
+        function endGame() {
+            game.running = false;
+            game.intervals.forEach(interval => clearInterval(interval));
+            
+            elements.finalScore.textContent = game.score;
+            elements.gameOver.style.display = 'block';
+            elements.startBtn.textContent = 'เริ่มเกม';
+            elements.startBtn.disabled = false;
+            
+            updateDebug('เกมจบแล้ว! คะแนนสุดท้าย: ' + game.score);
+        }
+
+        function restartGame() {
+            elements.gameOver.style.display = 'none';
+            document.querySelectorAll('.coin').forEach(coin => coin.remove());
+            game.coins = [];
+            startGame();
+        }
+
+        // คีย์บอร์ด
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                moveLeft();
+            } else if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                moveRight();
+            } else if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                if (!game.running) {
+                    startGame();
+                }
+            }
+        });
+
+        // สัมผัส (มือถือ)
+        let touchStartX = null;
+        elements.gameArea.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            touchStartX = e.touches[0].clientX;
+        });
+
+        elements.gameArea.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (touchStartX === null) return;
+            
+            const touchEndX = e.changedTouches[0].clientX;
+            const diff = touchStartX - touchEndX;
+
+            if (Math.abs(diff) > 30) {
+                if (diff > 0) {
+                    moveLeft();
+                } else {
+                    moveRight();
+                }
+            }
+            touchStartX = null;
+        });
+    </script>
+</body>
+</html>
